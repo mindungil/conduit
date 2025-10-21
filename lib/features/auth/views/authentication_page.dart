@@ -302,22 +302,61 @@ class _AuthenticationPageState extends ConsumerState<AuthenticationPage> {
   Widget _buildWelcomeSection() {
     return Column(
       children: [
-        BrandService.createBrandIcon(
-          size: 48,
-          useGradient: false,
-          addShadow: false,
-          context: context,
-        ),
-        const SizedBox(height: Spacing.lg),
-        Text(
-          AppLocalizations.of(context)!.signIn,
-          textAlign: TextAlign.center,
-          style: context.conduitTheme.headingLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-            height: 1.3,
+        // 전북도청 로고 컨테이너
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF1E3A8A), // 전북도청 메인 블루
+                Color(0xFF3B82F6), // 밝은 블루
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xFF1E3A8A).withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(16),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.asset(
+              'assets/icons/icon.png',
+              width: 64,
+              height: 64,
+              fit: BoxFit.contain,
+            ),
           ),
         ),
-        const SizedBox(height: Spacing.sm),
+        const SizedBox(height: Spacing.lg),
+        // 전북도청 AI 타이틀
+        Text(
+          '전북도청 AI',
+          textAlign: TextAlign.center,
+          style: context.conduitTheme.headingLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            height: 1.3,
+            fontSize: 32,
+            color: Color(0xFF1E3A8A),
+          ),
+        ),
+        const SizedBox(height: Spacing.xs),
+        // 서브타이틀
+        Text(
+          '전북도청 챗봇',
+          textAlign: TextAlign.center,
+          style: context.conduitTheme.bodyMedium?.copyWith(
+            color: context.conduitTheme.textSecondary,
+            height: 1.4,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: Spacing.md),
         Text(
           AppLocalizations.of(context)!.enterCredentials,
           textAlign: TextAlign.center,

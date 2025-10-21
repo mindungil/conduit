@@ -321,7 +321,7 @@
   "@messageInputLabel": {"description": "메시지 입력의 접근성 레이블"},
   "messageInputHint": "메시지를 입력하세요",
   "@messageInputHint": {"description": "메시지 입력 필드에 표시되는 힌트"},
-  "messageHintText": "Conduit에게 물어보세요",
+  "messageHintText": "무엇을 도와드릴까요?",
   "@messageHintText": {"description": "메시지 입력의 짧은 플레이스홀더 텍스트"},
   "stopGenerating": "생성 중지",
   "@stopGenerating": {"description": "어시스턴트의 응답 생성을 중지하는 작업"},

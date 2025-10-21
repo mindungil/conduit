@@ -83,6 +83,7 @@ dev_dependencies:
   riverpod_generator: ^3.0.0
   riverpod_lint: ^3.0.0
   custom_lint: ^0.8.0
+  flutter_launcher_icons: ^0.14.1
 
 dependency_overrides:
 
@@ -111,4 +112,11 @@ flutter_native_splash:
   
   # Web specific settings
   web: false
-    
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/icon.png"
+  adaptive_icon_background: "#024492"
+  adaptive_icon_foreground: "assets/icons/icon.png"
+
