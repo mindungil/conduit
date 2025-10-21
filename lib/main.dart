@@ -31,16 +31,103 @@ const ServerConfig _defaultServerConfig = ServerConfig(
   allowSelfSignedCertificates: false,
 );
 
+ServerConfig? _normalizeServerConfig(ServerConfig config) {
+  final normalizedUrl = _normalizeServerUrl(config.url);
+  if (normalizedUrl == null) {
+    return null;
+  }
+  if (normalizedUrl == config.url) {
+    return config;
+  }
+  return config.copyWith(url: normalizedUrl);
+}
+
+String? _normalizeServerUrl(String url) {
+  final trimmed = url.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+
+  String normalized = trimmed;
+  if (!normalized.startsWith('http://') &&
+      !normalized.startsWith('https://')) {
+    normalized = 'http://$normalized';
+  }
+
+  if (normalized.endsWith('/')) {
+    normalized = normalized.substring(0, normalized.length - 1);
+  }
+
+  final uri = Uri.tryParse(normalized);
+  if (uri == null) {
+    return null;
+  }
+
+  final hasValidScheme = uri.scheme == 'http' || uri.scheme == 'https';
+  if (!hasValidScheme || !uri.hasAuthority || uri.host.isEmpty) {
+    return null;
+  }
+
+  if (uri.hasPort && (uri.port < 1 || uri.port > 65535)) {
+    return null;
+  }
+
+  if (_looksLikeIpv4(uri.host) && !_isValidIpv4(uri.host)) {
+    return null;
+  }
+
+  return normalized;
+}
+
+bool _looksLikeIpv4(String host) {
+  final parts = host.split('.');
+  if (parts.length != 4) {
+    return false;
+  }
+  for (final part in parts) {
+    if (part.isEmpty || int.tryParse(part) == null) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool _isValidIpv4(String ip) {
+  final parts = ip.split('.');
+  if (parts.length != 4) {
+    return false;
+  }
+
+  for (final part in parts) {
+    final value = int.tryParse(part);
+    if (value == null || value < 0 || value > 255) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 Future<void> _ensureDefaultServerConfig(
   OptimizedStorageService storage,
 ) async {
   final existingConfigs = await storage.getServerConfigs();
   if (existingConfigs.isEmpty) {
-    await storage.saveServerConfigs(const [_defaultServerConfig]);
-    await storage.setActiveServerId(_defaultServerConfig.id);
+    final normalizedConfig = _normalizeServerConfig(_defaultServerConfig);
+    if (normalizedConfig == null) {
+      DebugLogger.warning(
+        'Skipped seeding default server: invalid configuration',
+        scope: 'app/startup',
+      );
+      return;
+    }
+
+    await storage.saveServerConfigs([normalizedConfig]);
+    await storage.setActiveServerId(normalizedConfig.id);
     DebugLogger.log(
       'Seeded default server configuration',
       scope: 'app/startup',
+      data: {'url': normalizedConfig.url},
     );
   }
 }
