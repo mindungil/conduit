@@ -127,7 +127,10 @@ class RouterNotifier extends ChangeNotifier {
         return location == Routes.splash ? null : Routes.splash;
       case AuthNavigationState.needsLogin:
         if (location == Routes.connectionIssue) return null;
-        return null;
+        if (location == Routes.authentication) return null;
+        if (location == Routes.serverConnection) return null;
+        if (location == Routes.login) return Routes.authentication;
+        return Routes.authentication;
       case AuthNavigationState.error:
         if (location == Routes.connectionIssue) return null;
         return null;

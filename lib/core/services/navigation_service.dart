@@ -76,7 +76,7 @@ class NavigationService {
   }
 
   static Future<void> navigateToChat() => navigateTo(Routes.chat);
-  static Future<void> navigateToLogin() => navigateTo(Routes.serverConnection);
+  static Future<void> navigateToLogin() => navigateTo(Routes.authentication);
   static Future<void> navigateToProfile() => navigateTo(Routes.profile);
   static Future<void> navigateToServerConnection() =>
       navigateTo(Routes.serverConnection);
