@@ -27,7 +27,7 @@ developer.TimelineTask? _startupTimeline;
 const ServerConfig _defaultServerConfig = ServerConfig(
   id: 'preconfigured-server',
   name: 'Preconfigured Server',
-  url: 'https://your-server.com',
+  url: 'http://220.124.155.35:5173',
   allowSelfSignedCertificates: false,
 );
 

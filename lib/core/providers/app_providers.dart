@@ -147,8 +147,138 @@ Future<List<ServerConfig>> serverConfigs(Ref ref) async {
   return storage.getServerConfigs();
 }
 
+/// Preconfigured server URL from build-time environment variable.
+/// Use: flutter build apk --dart-define=DEFAULT_SERVER_URL=https://your-server.com
+const String kDefaultServerUrl = String.fromEnvironment('DEFAULT_SERVER_URL');
+
+/// Checks if a preconfigured server URL should be automatically set up.
+/// This is triggered on app startup before any server is configured.
+///
+/// IMPORTANT: If the preconfigured server URL is invalid or unreachable,
+/// this provider will NOT create a server config, and the app will show
+/// the normal server connection page where users can enter a valid URL.
+@Riverpod(keepAlive: true)
+Future<void> ensurePreconfiguredServer(Ref ref) async {
+  // Skip if no default server URL is configured at build time
+  if (kDefaultServerUrl.isEmpty) return;
+
+  final storage = ref.watch(optimizedStorageServiceProvider);
+  final configs = await ref.watch(serverConfigsProvider.future);
+
+  // Skip if there's already a server configured
+  if (configs.isNotEmpty) return;
+
+  DebugLogger.log(
+    'auto-setup-start',
+    scope: 'server/preconfigured',
+    data: {'url': kDefaultServerUrl},
+  );
+
+  try {
+    // Parse and normalize the URL
+    String normalizedUrl = kDefaultServerUrl.trim();
+    if (!normalizedUrl.startsWith('http://') &&
+        !normalizedUrl.startsWith('https://')) {
+      normalizedUrl = 'https://$normalizedUrl';
+    }
+    if (normalizedUrl.endsWith('/')) {
+      normalizedUrl = normalizedUrl.substring(0, normalizedUrl.length - 1);
+    }
+
+    // Validate URL format
+    final uri = Uri.tryParse(normalizedUrl);
+    if (uri == null || uri.host.isEmpty) {
+      DebugLogger.error(
+        'auto-setup-invalid-url',
+        scope: 'server/preconfigured',
+        error: 'Invalid URL format: $normalizedUrl',
+      );
+      return; // Don't create config for invalid URLs
+    }
+
+    // Extract server name from URL
+    final serverName = uri.host;
+
+    // Generate a unique ID for this server
+    final serverId = 'preconfigured-${DateTime.now().millisecondsSinceEpoch}';
+
+    // Create a temporary server config for health check
+    final tempConfig = ServerConfig(
+      id: serverId,
+      name: serverName,
+      url: normalizedUrl,
+      isActive: true,
+      lastConnected: DateTime.now(),
+    );
+
+    // Perform health check to ensure the server is valid and reachable
+    DebugLogger.log(
+      'health-check-start',
+      scope: 'server/preconfigured',
+      data: {'url': normalizedUrl},
+    );
+
+    final api = ApiService(serverConfig: tempConfig);
+
+    // Use a shorter timeout for preconfigured server health check
+    // to avoid blocking app startup for too long
+    final isHealthy = await api.checkHealth().timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {
+        DebugLogger.error(
+          'health-check-timeout',
+          scope: 'server/preconfigured',
+          error: 'Health check timed out after 5 seconds',
+        );
+        return false;
+      },
+    );
+
+    if (!isHealthy) {
+      DebugLogger.error(
+        'auto-setup-health-check-failed',
+        scope: 'server/preconfigured',
+        error: 'Server health check failed for: $normalizedUrl',
+      );
+      // Don't create config for unhealthy servers
+      // User will see the normal server connection page
+      return;
+    }
+
+    DebugLogger.log(
+      'health-check-ok',
+      scope: 'server/preconfigured',
+      data: {'url': normalizedUrl},
+    );
+
+    // Save the config only if health check passed
+    await storage.saveServerConfigs([tempConfig]);
+    await storage.setActiveServerId(serverId);
+
+    DebugLogger.log(
+      'auto-setup-complete',
+      scope: 'server/preconfigured',
+      data: {'id': serverId, 'name': serverName, 'url': normalizedUrl},
+    );
+
+    // Invalidate to trigger reload
+    ref.invalidate(serverConfigsProvider);
+  } catch (e) {
+    DebugLogger.error(
+      'auto-setup-failed',
+      scope: 'server/preconfigured',
+      error: e,
+    );
+    // On any error, don't create the config
+    // User will see the normal server connection page
+  }
+}
+
 @Riverpod(keepAlive: true)
 Future<ServerConfig?> activeServer(Ref ref) async {
+  // Ensure preconfigured server is set up first
+  await ref.watch(ensurePreconfiguredServerProvider.future);
+
   final storage = ref.watch(optimizedStorageServiceProvider);
   final configs = await ref.watch(serverConfigsProvider.future);
   final activeId = await storage.getActiveServerId();

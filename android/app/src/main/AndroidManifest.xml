@@ -22,7 +22,7 @@
     </queries>
 
     <application
-        android:label="Conduit"
+        android:label="전북도청 AI"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"
@@ -78,7 +78,7 @@
         <activity
             android:name=".ProcessTextActivity"
             android:exported="true"
-            android:label="Ask Conduit"
+            android:label="전북도청 AI에게 물어보기"
             android:noHistory="true">
             <intent-filter>
                 <action android:name="android.intent.action.PROCESS_TEXT" />

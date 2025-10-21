@@ -130,6 +130,41 @@ flutter build appbundle --release
 flutter build ios --release
 ```
 
+### Building with Pre-configured Server URL (Enterprise/Custom Deployments)
+
+For enterprise deployments or custom builds where you want to pre-configure the server URL, you can use the `--dart-define` flag during build:
+
+```bash
+# Android APK with pre-configured server
+flutter build apk --dart-define=DEFAULT_SERVER_URL=https://your-company-server.com
+
+# iOS with pre-configured server
+flutter build ios --dart-define=DEFAULT_SERVER_URL=https://your-company-server.com
+
+# Multiple builds for different organizations
+flutter build apk --dart-define=DEFAULT_SERVER_URL=https://company-a.com -o company-a.apk
+flutter build apk --dart-define=DEFAULT_SERVER_URL=https://company-b.com -o company-b.apk
+```
+
+**How it works:**
+- When a pre-configured URL is set, the app performs a **health check** on first launch
+- If the server is **valid and reachable**, a server configuration is automatically created
+- Users will skip the server URL input screen and go directly to the login screen
+- Users can still change the server URL later via the back button on the authentication page
+- If no `DEFAULT_SERVER_URL` is provided, the app behaves normally (users must enter server URL manually)
+
+**Important notes:**
+- ⚠️ **The server URL must be valid and reachable** - The app will perform a health check (5 second timeout) before accepting the pre-configured URL
+- ⚠️ **If the health check fails** (invalid URL, server down, timeout, or not an Open-WebUI server), the app will show the normal server connection page after ~5 seconds
+- ✅ This prevents infinite loading issues from incorrect or unreachable server URLs
+- ✅ Fast startup: Invalid servers are detected and skipped within 5 seconds
+- ✅ Users can always fix configuration issues by entering a valid URL manually
+
+**Example use cases:**
+- Enterprise deployments with a fixed internal server
+- White-label builds for specific organizations
+- Simplified onboarding for non-technical users
+
 ## Configuration
 
 ### Android

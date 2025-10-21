@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleDisplayName</key>
-    <string>Ask Conduit</string>
+    <string>전북도청 AI에게 물어보기</string>
     <!-- Uncomment below lines if you want to use a custom group id rather than the default. Set it in Build Settings -> User-Defined -->
     <!-- <key>AppGroupId</key>
     <string>$(CUSTOM_GROUP_ID)</string> -->
