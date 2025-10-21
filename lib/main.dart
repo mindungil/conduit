@@ -3,9 +3,11 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/widgets/error_boundary.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'core/models/server_config.dart';
+import 'core/services/optimized_storage_service.dart';
+import 'core/widgets/error_boundary.dart';
 import 'core/providers/app_providers.dart';
 import 'core/persistence/hive_bootstrap.dart';
 import 'core/persistence/persistence_migrator.dart';
@@ -21,6 +23,27 @@ import 'core/services/share_receiver_service.dart';
 import 'core/providers/app_startup_providers.dart';
 
 developer.TimelineTask? _startupTimeline;
+
+const ServerConfig _defaultServerConfig = ServerConfig(
+  id: 'preconfigured-server',
+  name: 'Preconfigured Server',
+  url: 'https://your-server.com',
+  allowSelfSignedCertificates: false,
+);
+
+Future<void> _ensureDefaultServerConfig(
+  OptimizedStorageService storage,
+) async {
+  final existingConfigs = await storage.getServerConfigs();
+  if (existingConfigs.isEmpty) {
+    await storage.saveServerConfigs(const [_defaultServerConfig]);
+    await storage.setActiveServerId(_defaultServerConfig.id);
+    DebugLogger.log(
+      'Seeded default server configuration',
+      scope: 'app/startup',
+    );
+  }
+}
 
 void main() {
   runZonedGuarded(
@@ -82,6 +105,12 @@ void main() {
       await migrator.migrateIfNeeded();
       _startupTimeline!.instant('migration_complete');
 
+      final storage = OptimizedStorageService(
+        secureStorage: secureStorage,
+        boxes: hiveBoxes,
+      );
+      await _ensureDefaultServerConfig(storage);
+
       // Finish timeline after first frame paints
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _startupTimeline?.instant('first_frame_rendered');
@@ -94,6 +123,7 @@ void main() {
           overrides: [
             secureStorageProvider.overrideWithValue(secureStorage),
             hiveBoxesProvider.overrideWithValue(hiveBoxes),
+            optimizedStorageServiceProvider.overrideWithValue(storage),
           ],
           child: const ConduitApp(),
         ),
