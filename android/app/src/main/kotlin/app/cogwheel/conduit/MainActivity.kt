@@ -10,10 +10,15 @@ class MainActivity : FlutterActivity() {
     private lateinit var backgroundStreamingHandler: BackgroundStreamingHandler
     
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Ensure content draws behind system bars (backwards compatible helper)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        
         super.onCreate(savedInstanceState)
+        
+        // Modern edge-to-edge implementation for Android 15+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            window.decorView.setOnApplyWindowInsetsListener(null)
+        }
+        
+        // Enable edge-to-edge display (backwards compatible)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
     }
     
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

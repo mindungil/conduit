@@ -151,7 +151,7 @@ class _ConnectionIssuePageState extends ConsumerState<ConnectionIssuePage> {
           textAlign: TextAlign.center,
           style: context.conduitTheme.bodyMedium?.copyWith(
             color: context.conduitTheme.textPrimary,
-            fontFamily: 'monospace',
+            fontFamily: AppTypography.monospaceFontFamily,
           ),
         ),
         const SizedBox(height: Spacing.xs),

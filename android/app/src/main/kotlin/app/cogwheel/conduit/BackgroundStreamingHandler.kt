@@ -44,6 +44,13 @@ class BackgroundStreamingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_STOP -> {
+                stopStreaming()
+                return START_NOT_STICKY
+            }
+        }
+        
         val notification = createMinimalNotification()
         val desiredType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             resolveForegroundServiceType(intent)
@@ -67,15 +74,12 @@ class BackgroundStreamingService : Service() {
                 acquireWakeLock()
                 println("BackgroundStreamingService: Started foreground service")
             }
-            ACTION_STOP -> {
-                stopStreaming()
-            }
             "KEEP_ALIVE" -> {
                 keepAlive()
             }
         }
 
-        return START_STICKY // Restart if killed by system
+        return START_STICKY
     }
 
     private fun startForegroundInternal(notification: Notification, type: Int): Boolean {
@@ -175,9 +179,18 @@ class BackgroundStreamingService : Service() {
     private fun stopStreaming() {
         activeStreams.clear()
         releaseWakeLock()
-        stopForeground(true)
+        
+        if (isForeground) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+            isForeground = false
+        }
+        
         stopSelf()
-        isForeground = false
         println("BackgroundStreamingService: Service stopped")
     }
 
@@ -312,9 +325,13 @@ class BackgroundStreamingHandler(private val activity: MainActivity) : MethodCal
     }
 
     private fun stopForegroundService() {
-        val serviceIntent = Intent(context, BackgroundStreamingService::class.java)
-        serviceIntent.action = BackgroundStreamingService.ACTION_STOP
-        context.startService(serviceIntent)
+        try {
+            val serviceIntent = Intent(context, BackgroundStreamingService::class.java)
+            serviceIntent.action = BackgroundStreamingService.ACTION_STOP
+            context.stopService(serviceIntent)
+        } catch (e: Exception) {
+            println("BackgroundStreamingHandler: Failed to stop foreground service: ${e.message}")
+        }
     }
 
     private fun startBackgroundMonitoring() {
@@ -354,15 +371,25 @@ class BackgroundStreamingHandler(private val activity: MainActivity) : MethodCal
     }
 
     private fun keepAlive() {
-        // Just notify the service to refresh
-        val serviceIntent = Intent(context, BackgroundStreamingService::class.java)
-        serviceIntent.action = "KEEP_ALIVE"
-        serviceIntent.putExtra("streamCount", activeStreams.size)
-        serviceIntent.putExtra(
-            BackgroundStreamingService.EXTRA_REQUIRES_MICROPHONE,
-            streamsRequiringMic.isNotEmpty(),
-        )
-        context.startService(serviceIntent)
+        if (activeStreams.isEmpty()) return
+        
+        try {
+            val serviceIntent = Intent(context, BackgroundStreamingService::class.java)
+            serviceIntent.action = "KEEP_ALIVE"
+            serviceIntent.putExtra("streamCount", activeStreams.size)
+            serviceIntent.putExtra(
+                BackgroundStreamingService.EXTRA_REQUIRES_MICROPHONE,
+                streamsRequiringMic.isNotEmpty(),
+            )
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            println("BackgroundStreamingHandler: Failed to keep alive service: ${e.message}")
+        }
     }
 
     private fun createNotificationChannel() {

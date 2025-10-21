@@ -11,6 +11,7 @@ import '../../../core/utils/reasoning_parser.dart';
 import '../../../core/utils/message_segments.dart';
 import '../../../core/utils/tool_calls_parser.dart';
 import '../../../core/models/chat_message.dart';
+import '../../../core/utils/markdown_to_text.dart';
 import '../providers/text_to_speech_provider.dart';
 import 'enhanced_image_attachment.dart';
 import 'package:conduit/l10n/app_localizations.dart';
@@ -22,21 +23,6 @@ import '../providers/chat_providers.dart' show sendMessageWithContainer;
 import '../../../core/utils/debug_logger.dart';
 import 'sources/openwebui_sources.dart';
 import '../providers/assistant_response_builder_provider.dart';
-
-// Pre-compiled regex patterns for TTS sanitization (performance optimization)
-final _ttsCodeBlockPattern = RegExp(r'```');
-final _ttsInlineCodePattern = RegExp(r'`');
-final _ttsImagePattern = RegExp(r'!\[(.*?)\]\((.*?)\)');
-final _ttsLinkPattern = RegExp(r'\[(.*?)\]\((.*?)\)');
-final _ttsBoldPattern1 = RegExp(r'\*\*');
-final _ttsBoldPattern2 = RegExp(r'__');
-final _ttsItalicPattern1 = RegExp(r'\*');
-final _ttsItalicPattern2 = RegExp(r'_');
-final _ttsStrikePattern = RegExp(r'~');
-final _ttsListPattern = RegExp(r'^[-*+]\s+', multiLine: true);
-final _ttsQuotePattern = RegExp(r'^>\s?', multiLine: true);
-final _ttsMultiSpacePattern = RegExp(r'[ \t]{2,}');
-final _ttsMultiNewlinePattern = RegExp(r'\n{3,}');
 
 // Pre-compiled regex patterns for image processing (performance optimization)
 final _base64ImagePattern = RegExp(r'data:image/[^;]+;base64,[A-Za-z0-9+/]+=*');
@@ -258,7 +244,7 @@ class _AssistantMessageWidgetState extends ConsumerState<AssistantMessageWidget>
 
   String _buildTtsPlainText(List<MessageSegment> segments, String fallback) {
     if (segments.isEmpty) {
-      return _sanitizeForSpeech(fallback);
+      return MarkdownToText.convert(fallback);
     }
 
     final buffer = StringBuffer();
@@ -267,7 +253,7 @@ class _AssistantMessageWidgetState extends ConsumerState<AssistantMessageWidget>
         continue;
       }
       final text = segment.text ?? '';
-      final sanitized = _sanitizeForSpeech(text);
+      final sanitized = MarkdownToText.convert(text);
       if (sanitized.isEmpty) {
         continue;
       }
@@ -280,36 +266,9 @@ class _AssistantMessageWidgetState extends ConsumerState<AssistantMessageWidget>
 
     final result = buffer.toString().trim();
     if (result.isEmpty) {
-      return _sanitizeForSpeech(fallback);
+      return MarkdownToText.convert(fallback);
     }
     return result;
-  }
-
-  String _sanitizeForSpeech(String input) {
-    if (input.isEmpty) {
-      return '';
-    }
-
-    var text = input;
-    // Use pre-compiled regex patterns for better performance
-    text = text.replaceAll(_ttsCodeBlockPattern, ' ');
-    text = text.replaceAll(_ttsInlineCodePattern, '');
-    text = text.replaceAll(_ttsImagePattern, r'$1');
-    text = text.replaceAll(_ttsLinkPattern, r'$1');
-    text = text.replaceAll(_ttsBoldPattern1, '');
-    text = text.replaceAll(_ttsBoldPattern2, '');
-    text = text.replaceAll(_ttsItalicPattern1, '');
-    text = text.replaceAll(_ttsItalicPattern2, '');
-    text = text.replaceAll(_ttsStrikePattern, '');
-    text = text.replaceAll(_ttsListPattern, '');
-    text = text.replaceAll(_ttsQuotePattern, '');
-    text = text.replaceAll('&nbsp;', ' ');
-    text = text.replaceAll('&amp;', '&');
-    text = text.replaceAll('&lt;', '<');
-    text = text.replaceAll('&gt;', '>');
-    text = text.replaceAll(_ttsMultiSpacePattern, ' ');
-    text = text.replaceAll(_ttsMultiNewlinePattern, '\n\n');
-    return text.trim();
   }
 
   // No streaming-specific markdown fixes needed here; handled by Markdown widget
@@ -426,7 +385,7 @@ class _AssistantMessageWidgetState extends ConsumerState<AssistantMessageWidget>
                           style: TextStyle(
                             fontSize: AppTypography.bodySmall,
                             color: theme.textSecondary,
-                            fontFamily: 'monospace',
+                            fontFamily: AppTypography.monospaceFontFamily,
                             height: 1.35,
                           ),
                         ),
@@ -448,7 +407,7 @@ class _AssistantMessageWidgetState extends ConsumerState<AssistantMessageWidget>
                           style: TextStyle(
                             fontSize: AppTypography.bodySmall,
                             color: theme.textSecondary,
-                            fontFamily: 'monospace',
+                            fontFamily: AppTypography.monospaceFontFamily,
                             height: 1.35,
                           ),
                         ),
@@ -1248,7 +1207,7 @@ class _AssistantMessageWidgetState extends ConsumerState<AssistantMessageWidget>
                     style: TextStyle(
                       fontSize: AppTypography.bodySmall,
                       color: theme.textSecondary,
-                      fontFamily: 'monospace',
+                      fontFamily: AppTypography.monospaceFontFamily,
                       height: 1.4,
                     ),
                   ),
@@ -2035,7 +1994,7 @@ class CodeExecutionListView extends StatelessWidget {
                       child: SelectableText(
                         execution.code!,
                         style: const TextStyle(
-                          fontFamily: 'monospace',
+                          fontFamily: AppTypography.monospaceFontFamily,
                           height: 1.4,
                         ),
                       ),

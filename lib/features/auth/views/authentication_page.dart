@@ -288,7 +288,7 @@ class _AuthenticationPageState extends ConsumerState<AuthenticationPage> {
                   hostText,
                   style: context.conduitTheme.bodySmall?.copyWith(
                     color: context.conduitTheme.textSecondary,
-                    fontFamily: 'monospace',
+                    fontFamily: AppTypography.monospaceFontFamily,
                   ),
                 ),
               ],

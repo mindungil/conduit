@@ -456,7 +456,7 @@ class ErrorCard extends StatelessWidget {
                     child: SelectableText(
                       technicalDetails!,
                       style: const TextStyle(
-                        fontFamily: 'monospace',
+                        fontFamily: AppTypography.monospaceFontFamily,
                         fontSize: AppTypography.labelMedium,
                       ),
                     ),
@@ -539,7 +539,7 @@ class ErrorDialog extends StatelessWidget {
                 SelectableText(
                   technicalDetails!,
                   style: const TextStyle(
-                    fontFamily: 'monospace',
+                    fontFamily: AppTypography.monospaceFontFamily,
                     fontSize: AppTypography.labelMedium,
                   ),
                 ),

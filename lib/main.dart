@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/widgets/error_boundary.dart';
@@ -56,12 +55,9 @@ void main() {
       _startupTimeline!.start('app_startup');
       _startupTimeline!.instant('bindings_initialized');
 
-      // Defer edge-to-edge mode to post-frame to avoid impacting first paint
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        // ignore: discarded_futures
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-        _startupTimeline?.instant('edge_to_edge_enabled');
-      });
+      // Edge-to-edge is now handled natively in MainActivity.kt for Android 15+
+      // No need for SystemUiMode.edgeToEdge which is deprecated
+      _startupTimeline?.instant('edge_to_edge_configured');
 
       const secureStorage = FlutterSecureStorage(
         aOptions: AndroidOptions(

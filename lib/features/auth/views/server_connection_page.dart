@@ -721,7 +721,7 @@ class _ServerConnectionPageState extends ConsumerState<ServerConnectionPage> {
                   entry.value,
                   style: context.conduitTheme.bodySmall?.copyWith(
                     color: context.conduitTheme.textSecondary,
-                    fontFamily: 'monospace',
+                    fontFamily: AppTypography.monospaceFontFamily,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),

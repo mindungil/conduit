@@ -1168,7 +1168,7 @@ class ConduitShadows {
 class AppTypography {
   // Primary UI font now uses the platform default system font
   static const String fontFamily = '';
-  static const String monospaceFontFamily = 'SF Mono';
+  static const String monospaceFontFamily = 'monospace';
 
   // Letter spacing values - Enhanced for better readability
   static const double letterSpacingTight = -0.5;
