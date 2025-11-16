@@ -59,9 +59,25 @@ class ResponsiveDrawerLayoutState extends State<ResponsiveDrawerLayout>
     value: 0.0,
   );
 
+  bool _initialized = false;
+
   bool _isTablet(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return size.shortestSide >= 600;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize drawer state based on device type (only once)
+    if (!_initialized) {
+      _initialized = true;
+      if (_isTablet(context)) {
+        // On tablets, drawer starts open
+        _controller.value = 1.0;
+      }
+      // On mobile, drawer starts closed (0.0 is already the default)
+    }
   }
 
   double get _panelWidth =>
@@ -99,9 +115,6 @@ class ResponsiveDrawerLayoutState extends State<ResponsiveDrawerLayout>
   }
 
   void open({double velocity = 0.0}) {
-    // Only animate on mobile; on tablet, drawer is always visible
-    if (_isTablet(context)) return;
-
     try {
       widget.onOpenStart?.call();
     } catch (_) {}
@@ -110,16 +123,10 @@ class ResponsiveDrawerLayoutState extends State<ResponsiveDrawerLayout>
   }
 
   void close({double velocity = 0.0}) {
-    // Only animate on mobile; on tablet, drawer is always visible
-    if (_isTablet(context)) return;
-
     _animateTo(0.0, velocity: velocity, easeOut: true);
   }
 
   void toggle() {
-    // Only toggle on mobile; on tablet, drawer is always visible
-    if (_isTablet(context)) return;
-
     isOpen ? close() : open();
   }
 
@@ -189,22 +196,36 @@ class ResponsiveDrawerLayoutState extends State<ResponsiveDrawerLayout>
   }
 
   Widget _buildTabletLayout(ConduitThemeExtension theme) {
-    return Row(
-      children: [
-        // Persistent drawer
-        Container(
-          width: widget.tabletDrawerWidth,
-          decoration: BoxDecoration(
-            color: theme.surfaceBackground,
-            border: Border(
-              right: BorderSide(color: theme.dividerColor, width: 1),
-            ),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final t = _controller.value;
+        // Calculate drawer offset: fully visible when t=1.0, hidden when t=0.0
+        final drawerOffset = -widget.tabletDrawerWidth * (1.0 - t);
+
+        return ClipRect(
+          child: Row(
+            children: [
+              // Animated drawer
+              Transform.translate(
+                offset: Offset(drawerOffset, 0),
+                child: Container(
+                  width: widget.tabletDrawerWidth,
+                  decoration: BoxDecoration(
+                    color: theme.surfaceBackground,
+                    border: Border(
+                      right: BorderSide(color: theme.dividerColor, width: 1),
+                    ),
+                  ),
+                  child: widget.drawer,
+                ),
+              ),
+              // Content - always takes remaining space
+              Expanded(child: widget.child),
+            ],
           ),
-          child: widget.drawer,
-        ),
-        // Content
-        Expanded(child: widget.child),
-      ],
+        );
+      },
     );
   }
 
